@@ -10,6 +10,7 @@ type UseCalorieReturn = {
   error: string;
   handleChange: (field: keyof CalorieFormValues, value: string) => void;
   handleSubmit: () => void;
+  saving: boolean;
 };
 
 export function useCalorie(): UseCalorieReturn {
@@ -22,6 +23,7 @@ export function useCalorie(): UseCalorieReturn {
   });
   const [result, setResult] = useState<CalorieResultType | null>(null);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // フォームの任意フィールドを更新
   const handleChange = (field: keyof CalorieFormValues, value: string) => {
@@ -29,7 +31,7 @@ export function useCalorie(): UseCalorieReturn {
   };
 
   // バリデーション→計算→結果セット
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { weight, height, age, gender, activity } = formValues;
     if (!weight || !height || !age) {
       setError("全ての項目を入力してください");
@@ -40,8 +42,26 @@ export function useCalorie(): UseCalorieReturn {
     const bmr = calcBMR(Number(weight), Number(height), Number(age), gender);
 
     const tdee = calcTDEE(bmr, activity);
-    setResult({ tdee, ...calcBulkCalorie(tdee) });
+    const bulk = calcBulkCalorie(tdee);
+    setResult({ tdee, ...bulk });
+
+    // 計算結果をDBに保存する
+    setSaving(true);
+    await fetch("/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        weight: parseFloat(weight),
+        height: parseFloat(height),
+        age: Number(age),
+        gender,
+        activity,
+        lean: tdee,
+        normal: bulk,
+      }),
+    });
+    setSaving(false);
   };
 
-  return { formValues, result, error, handleChange, handleSubmit };
+  return { formValues, result, saving, error, handleChange, handleSubmit };
 }

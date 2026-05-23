@@ -15,3 +15,16 @@ export type CalorieResultType = {
   lean: number;
   normal: number;
 };
+
+export type CalorieHistory = {
+  id: string;
+  weight: number;
+  height: number;
+  age: number;
+  gender: string;
+  activity: string;
+  tdee: number;
+  lean: number;
+  normal: number;
+  createdAt: Date;
+};
